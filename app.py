@@ -1,10 +1,8 @@
-
 import streamlit as st
 import pandas as pd
-
 import joblib
+import pickle
 
-model_data = joblib.load("customer_churn_model.joblib")
 st.set_page_config(
     page_title="Customer Churn Prediction",
     page_icon="📊",
@@ -12,16 +10,26 @@ st.set_page_config(
 )
 
 st.title("📊 Customer Churn Prediction")
-st.write("Predict whether a customer is likely to churn.")
+st.write("Predict whether a customer is likely to churn using Machine Learning.")
 
-# Load model
+# ==========================
+# Load Model
+# ==========================
 
+model_data = joblib.load("customer_churn_model.joblib")
 
 model = model_data["model"]
 
-# Load encoders
+# ==========================
+# Load Encoders
+# ==========================
+
 with open("encoders.pkl", "rb") as f:
     encoders = pickle.load(f)
+
+# ==========================
+# User Inputs
+# ==========================
 
 st.header("Customer Information")
 
@@ -29,80 +37,75 @@ col1, col2 = st.columns(2)
 
 with col1:
 
-    gender = st.selectbox("Gender", ["Male","Female"])
+    gender = st.selectbox("Gender", ["Male", "Female"])
 
     SeniorCitizen = st.selectbox(
         "Senior Citizen",
-        [0,1],
-        format_func=lambda x: "Yes" if x==1 else "No"
+        [0, 1],
+        format_func=lambda x: "Yes" if x == 1 else "No"
     )
 
-    Partner = st.selectbox("Partner",["Yes","No"])
+    Partner = st.selectbox("Partner", ["Yes", "No"])
 
-    Dependents = st.selectbox("Dependents",["Yes","No"])
+    Dependents = st.selectbox("Dependents", ["Yes", "No"])
 
-    tenure = st.slider(
-        "Tenure (Months)",
-        0,
-        72,
-        12
-    )
+    tenure = st.slider("Tenure (Months)", 0, 72, 12)
 
     PhoneService = st.selectbox(
         "Phone Service",
-        ["Yes","No"]
+        ["Yes", "No"]
     )
 
     MultipleLines = st.selectbox(
         "Multiple Lines",
-        ["No","Yes","No phone service"]
+        ["No", "Yes", "No phone service"]
     )
 
     InternetService = st.selectbox(
         "Internet Service",
-        ["DSL","Fiber optic","No"]
+        ["DSL", "Fiber optic", "No"]
     )
 
     OnlineSecurity = st.selectbox(
         "Online Security",
-        ["Yes","No","No internet service"]
+        ["Yes", "No", "No internet service"]
     )
 
     OnlineBackup = st.selectbox(
         "Online Backup",
-        ["Yes","No","No internet service"]
+        ["Yes", "No", "No internet service"]
     )
 
 with col2:
 
     DeviceProtection = st.selectbox(
         "Device Protection",
-        ["Yes","No","No internet service"]
+        ["Yes", "No", "No internet service"]
     )
 
     TechSupport = st.selectbox(
         "Tech Support",
-        ["Yes","No","No internet service"]
+        ["Yes", "No", "No internet service"]
     )
 
     StreamingTV = st.selectbox(
         "Streaming TV",
-        ["Yes","No","No internet service"]
+        ["Yes", "No", "No internet service"]
     )
 
     StreamingMovies = st.selectbox(
         "Streaming Movies",
-        ["Yes","No","No internet service"]
+        ["Yes", "No", "No internet service"]
     )
 
     Contract = st.selectbox(
         "Contract",
-        ["Month-to-month","One year","Two year"]
+        ["Month-to-month", "One year", "Two year"]
     )
 
     PaperlessBilling = st.selectbox(
         "Paperless Billing",
-        ["Yes","No"]
+        ["Yes", "No"]
     )
 
     PaymentMethod = st.selectbox(
@@ -127,51 +130,76 @@ with col2:
         value=1000.0
     )
 
+# ==========================
+# Prediction
+# ==========================
+
 if st.button("Predict Churn"):
 
     input_data = {
-        "gender":gender,
-        "SeniorCitizen":SeniorCitizen,
-        "Partner":Partner,
-        "Dependents":Dependents,
-        "tenure":tenure,
-        "PhoneService":PhoneService,
-        "MultipleLines":MultipleLines,
-        "InternetService":InternetService,
-        "OnlineSecurity":OnlineSecurity,
-        "OnlineBackup":OnlineBackup,
-        "DeviceProtection":DeviceProtection,
-        "TechSupport":TechSupport,
-        "StreamingTV":StreamingTV,
-        "StreamingMovies":StreamingMovies,
-        "Contract":Contract,
-        "PaperlessBilling":PaperlessBilling,
-        "PaymentMethod":PaymentMethod,
-        "MonthlyCharges":MonthlyCharges,
-        "TotalCharges":TotalCharges
+        "gender": gender,
+        "SeniorCitizen": SeniorCitizen,
+        "Partner": Partner,
+        "Dependents": Dependents,
+        "tenure": tenure,
+        "PhoneService": PhoneService,
+        "MultipleLines": MultipleLines,
+        "InternetService": InternetService,
+        "OnlineSecurity": OnlineSecurity,
+        "OnlineBackup": OnlineBackup,
+        "DeviceProtection": DeviceProtection,
+        "TechSupport": TechSupport,
+        "StreamingTV": StreamingTV,
+        "StreamingMovies": StreamingMovies,
+        "Contract": Contract,
+        "PaperlessBilling": PaperlessBilling,
+        "PaymentMethod": PaymentMethod,
+        "MonthlyCharges": MonthlyCharges,
+        "TotalCharges": TotalCharges
     }
 
     input_df = pd.DataFrame([input_data])
 
-    # Encode categorical features
+    # Encode categorical columns
     for column, encoder in encoders.items():
         input_df[column] = encoder.transform(input_df[column])
 
     prediction = model.predict(input_df)
-
     probability = model.predict_proba(input_df)
 
     st.divider()
 
     if prediction[0] == 1:
-        st.error("⚠ This customer is likely to churn.")
+        st.error("⚠️ Customer is likely to churn.")
     else:
-        st.success("✅ This customer is unlikely to churn.")
+        st.success("✅ Customer is unlikely to churn.")
+
+    churn_probability = probability[0][1] * 100
 
     st.subheader("Prediction Probability")
 
-    st.write(
-        f"Probability of Churn: **{probability[0][1]*100:.2f}%**"
+    st.metric(
+        label="Probability of Churn",
+        value=f"{churn_probability:.2f}%"
     )
 
     st.progress(float(probability[0][1]))
+
+    st.subheader("Business Recommendation")
+
+    if prediction[0] == 1:
+        st.warning(
+            """
+            - Offer personalized discounts.
+            - Encourage long-term contracts.
+            - Provide premium customer support.
+            - Recommend value-added services.
+            """
+        )
+    else:
+        st.success(
+            """
+            Customer is likely to stay.
+            Continue maintaining service quality and engagement.
+            """
+        )
