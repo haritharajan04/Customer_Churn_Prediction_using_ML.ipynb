@@ -1,8 +1,10 @@
 
 import streamlit as st
 import pandas as pd
-import pickle
 
+import joblib
+
+model_data = joblib.load("customer_churn_model.joblib")
 st.set_page_config(
     page_title="Customer Churn Prediction",
     page_icon="📊",
@@ -13,8 +15,7 @@ st.title("📊 Customer Churn Prediction")
 st.write("Predict whether a customer is likely to churn.")
 
 # Load model
-with open("customer_churn_model.pkl", "rb") as f:
-    model_data = pickle.load(f)
+
 
 model = model_data["model"]
 
